@@ -1,0 +1,7 @@
+C:\Users\Vitalyd\Dropbox\GpsInfo\GpsInfo\bin\Debug\GpsInfo.exe
+C:\Users\Vitalyd\Dropbox\GpsInfo\GpsInfo\bin\Debug\GpsInfo.pdb
+C:\Users\Vitalyd\Dropbox\GpsInfo\GpsInfo\obj\Debug\GpsInfo.csprojResolveAssemblyReference.cache
+C:\Users\Vitalyd\Dropbox\GpsInfo\GpsInfo\obj\Debug\GpsInfo.exe
+C:\Users\Vitalyd\Dropbox\GpsInfo\GpsInfo\obj\Debug\GpsInfo.pdb
+C:\Users\Vitaly\Dropbox\GpsInfo\GpsInfo\obj\Debug\GpsInfo.exe
+C:\Users\Vitaly\Dropbox\GpsInfo\GpsInfo\obj\Debug\GpsInfo.pdb
