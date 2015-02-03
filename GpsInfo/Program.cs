@@ -4,8 +4,7 @@ namespace GpsInfo
 {
     class Program
     {
-        private const string FileName = @"C:\Users\Vitalyd\Downloads\WP_20140307_002.jpg";
-//        private const string FileName = @"D:\2014-09-17 14.34.54.jpg";
+        private const string FileName = @"..\..\data\2014-09-17 14.34.54.jpg";
 
         static void Main(string[] args)
         {
