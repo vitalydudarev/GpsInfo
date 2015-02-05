@@ -8,16 +8,18 @@ namespace GpsInfo
 
         static void Main(string[] args)
         {
-            byte[] bytes = ReadFile(FileName);
+            var bytes = ReadFile(FileName);
 
-            JpegImageInfo jii = new JpegImageInfo(bytes);
-            bool isJpeg = jii.IsJpeg();
-            bool hasExif = jii.HasExif();
-            int exifSize = jii.GetApp1Size();
+            var jii = new ImageInfo(bytes);
+            var isJpeg = jii.IsJpeg();
+            var hasExif = jii.HasExif();
 
-            byte[] exifData = jii.GetApp1DataTemp();
-            ExifInfo exifInfo = new ExifInfo(exifData);
-            exifInfo.Parse();
+            if (isJpeg && hasExif)
+            {
+                var exifData = jii.GetExifData();
+                var exifInfo = new ExifInfo(exifData);
+                exifInfo.Parse();
+            }
         }
 
         private static byte[] ReadFile(string fileName)

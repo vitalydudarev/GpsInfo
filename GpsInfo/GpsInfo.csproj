@@ -49,7 +49,7 @@
     <Compile Include="IFD.cs" />
     <Compile Include="ImageFileHeader.cs" />
     <Compile Include="ITiffElement.cs" />
-    <Compile Include="JpegImageInfo.cs" />
+    <Compile Include="ImageInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="TagsEnum.cs" />
