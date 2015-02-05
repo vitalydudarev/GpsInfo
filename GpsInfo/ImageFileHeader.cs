@@ -1,31 +1,20 @@
 ﻿namespace GpsInfo
 {
-    public class ImageFileHeader
+    public class ImageFileHeader : ITiffElement
     {
         #region Public Properties
 
-        public string ByteOrder
-        {
-            get { return _byteOrder; }
-        }
+        public string ByteOrder { get; private set; }
 
-        public short Number42
-        {
-            get { return _number42; }
-        }
+        public short Number42 { get; private set; }
 
-        public int FirstIfdOffset
-        {
-            get { return _firstIfdOffset; }
-        }
+        public int FirstIfdOffset { get; private set; }
 
         #endregion
 
         #region Private Fields
 
-        private readonly string _byteOrder;
-        private readonly short _number42;
-        private readonly int _firstIfdOffset;
+        private readonly byte[] _bytes;
 
         #endregion
 
@@ -33,9 +22,20 @@
 
         public ImageFileHeader(byte[] bytes)
         {
-            _byteOrder = bytes.GetBytes(0, sizeof(short)).ToString(true);
-            _number42 = bytes.GetBytes(2, sizeof(short)).ToInt16(ByteOrder == "MM");
-            _firstIfdOffset = bytes.GetBytes(4, sizeof(int)).ToInt32(ByteOrder == "MM");
+            _bytes = bytes;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        public ITiffElement Init()
+        {
+            ByteOrder = _bytes.GetBytes(0, sizeof(short)).ToString(true);
+            Number42 = _bytes.GetBytes(2, sizeof(short)).ToInt16(ByteOrder == "MM");
+            FirstIfdOffset = _bytes.GetBytes(4, sizeof(int)).ToInt32(ByteOrder == "MM");
+
+            return this;
         }
 
         #endregion

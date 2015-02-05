@@ -1,31 +1,21 @@
 ﻿namespace GpsInfo
 {
-    public class IFD
+    public class IFD : ITiffElement
     {
         #region Public Properties
 
-        public short NumberOfDirectoryEntries
-        {
-            get { return _numberOfDirectoryEntries; }
-        }
+        public short NumberOfDirectoryEntries { get; private set; }
 
-        public int OffsetOfNextIfd
-        {
-            get { return _offsetOfNextIfd; }
-        }
+        public int OffsetOfNextIfd { get; private set; }
 
-        public DirectoryEntry[] Entries
-        {
-            get { return _entries; }
-        }
+        public DirectoryEntry[] Entries { get; private set; }
 
         #endregion
 
         #region Private Fields
 
-        private readonly short _numberOfDirectoryEntries;
-        private readonly int _offsetOfNextIfd;
-        private readonly DirectoryEntry[] _entries;
+        private readonly byte[] _bytes;
+        private readonly bool _isBigEndian;
 
         #endregion
 
@@ -33,21 +23,29 @@
 
         public IFD(byte[] bytes, bool isBigEndian)
         {
-            _numberOfDirectoryEntries = bytes.GetBytes(0, 2).ToInt16(isBigEndian);
-            var entriesBytes = bytes.GetBytes(2, _numberOfDirectoryEntries * DirectoryEntry.Size);
-            _offsetOfNextIfd = bytes.GetBytes(2 + entriesBytes.Length, 4).ToInt32(isBigEndian);
+            _bytes = bytes;
+            _isBigEndian = isBigEndian;
+        }
 
-            _entries = new DirectoryEntry[_numberOfDirectoryEntries];
+        #endregion
+
+        public ITiffElement Init()
+        {
+            NumberOfDirectoryEntries = _bytes.GetBytes(0, 2).ToInt16(_isBigEndian);
+            var entriesBytes = _bytes.GetBytes(2, NumberOfDirectoryEntries * DirectoryEntry.Size);
+            OffsetOfNextIfd = _bytes.GetBytes(2 + entriesBytes.Length, 4).ToInt32(_isBigEndian);
+
+            Entries = new DirectoryEntry[NumberOfDirectoryEntries];
             int count = 0;
 
             for (int i = 0; i < entriesBytes.Length; i = i + DirectoryEntry.Size)
             {
-                var entry = new DirectoryEntry(entriesBytes.GetBytes(i, DirectoryEntry.Size), isBigEndian);
-                _entries[count] = entry;
+                var entry = (DirectoryEntry)new DirectoryEntry(entriesBytes.GetBytes(i, DirectoryEntry.Size), _isBigEndian).Init();
+                Entries[count] = entry;
                 count++;
             }
-        }
 
-        #endregion
+            return this;
+        }
     }
 }

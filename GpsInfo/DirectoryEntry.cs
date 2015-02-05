@@ -1,43 +1,25 @@
 ﻿namespace GpsInfo
 {
-    public class DirectoryEntry
+    public class DirectoryEntry : ITiffElement
     {
         #region Public Properties
 
-        public ushort Tag
-        {
-            get { return _tag; }
-        }
+        public ushort Tag { get; private set; }
 
-        public ExifTypes Type
-        {
-            get { return _type; }
-        }
+        public ExifTypes Type { get; private set; }
 
-        public int Count
-        {
-            get { return _count; }
-        }
+        public int Count { get; private set; }
 
-        public int ValueOrOffset
-        {
-            get { return _valueOrOffset; }
-        }
+        public int ValueOrOffset { get; private set; }
 
-        public string TagName
-        {
-            get { return _tagName; }
-        }
+        public string TagName { get; private set; }
 
         #endregion
 
         #region Private Fields
 
-        private readonly ushort _tag;
-        private readonly ExifTypes _type;
-        private readonly int _count;
-        private readonly int _valueOrOffset;
-        private readonly string _tagName;
+        private readonly byte[] _bytes;
+        private readonly bool _isBigEndian;
 
         #endregion
 
@@ -51,11 +33,23 @@
 
         public DirectoryEntry(byte[] bytes, bool isBigEndian)
         {
-            _tag = bytes.GetBytes(0, 2).ToUInt16(isBigEndian);
-            _type = (ExifTypes)bytes.GetBytes(2, 2).ToInt16(isBigEndian);
-            _count = bytes.GetBytes(4, 4).ToInt32(isBigEndian);
-            _valueOrOffset = bytes.GetBytes(8, 4).ToInt32(isBigEndian);
-            _tagName = ((TagsEnum.Tags)Tag).ToString();
+            _bytes = bytes;
+            _isBigEndian = isBigEndian;
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        public ITiffElement Init()
+        {
+            Tag = _bytes.GetBytes(0, 2).ToUInt16(_isBigEndian);
+            Type = (ExifTypes)_bytes.GetBytes(2, 2).ToInt16(_isBigEndian);
+            Count = _bytes.GetBytes(4, 4).ToInt32(_isBigEndian);
+            ValueOrOffset = _bytes.GetBytes(8, 4).ToInt32(_isBigEndian);
+            TagName = ((TagsEnum.Tags)Tag).ToString();
+
+            return this;
         }
 
         #endregion

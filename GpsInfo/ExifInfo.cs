@@ -42,7 +42,7 @@ namespace GpsInfo
             var ifds = new List<IFD>();
             var allEntries = new List<DirectoryEntry>();
             var tiff = _tiffBody.GetBytes(header.FirstIfdOffset, (_tiffBody.Length - (TiffBodyOffset + header.FirstIfdOffset)));
-            var firstIfd = new IFD(tiff, isBigEndian);
+            var firstIfd = (IFD)new IFD(tiff, isBigEndian).Init();
             ifds.Add(firstIfd);
             var entries = firstIfd.Entries;
             allEntries.AddRange(entries);
@@ -52,7 +52,7 @@ namespace GpsInfo
             while (ifd.OffsetOfNextIfd != 0 && ifd.NumberOfDirectoryEntries > 0)
             {
                 var bytes = _tiffBody.GetBytes(ifd.OffsetOfNextIfd, (_tiffBody.Length - (TiffBodyOffset + ifd.OffsetOfNextIfd)));
-                var newIfd = new IFD(bytes, isBigEndian);
+                var newIfd = (IFD)new IFD(bytes, isBigEndian).Init();
                 ifds.Add(newIfd);
                 allEntries.AddRange(newIfd.Entries);
 
@@ -63,7 +63,7 @@ namespace GpsInfo
             if (exifEntry != null)
             {
                 var bytes = _tiffBody.GetBytes(exifEntry.ValueOrOffset, (_tiffBody.Length - (TiffBodyOffset + exifEntry.ValueOrOffset)));
-                var exifIfd = new IFD(bytes, isBigEndian);
+                var exifIfd = (IFD)new IFD(bytes, isBigEndian).Init();
                 ifds.Add(exifIfd);
                 allEntries.AddRange(exifIfd.Entries);
             }
@@ -72,7 +72,7 @@ namespace GpsInfo
             if (gpsEntry != null)
             {
                 var bytes = _tiffBody.GetBytes(gpsEntry.ValueOrOffset, (_tiffBody.Length - (TiffBodyOffset + gpsEntry.ValueOrOffset)));
-                var gpsIfd = new IFD(bytes, isBigEndian);
+                var gpsIfd = (IFD)new IFD(bytes, isBigEndian).Init();
 
                 ProcessGpsInfo(gpsIfd.Entries, _tiffBody);
             }
@@ -95,12 +95,12 @@ namespace GpsInfo
             if (entry.Count <= 4)
             {
                 var bytes = BitConverter.GetBytes(entry.ValueOrOffset);
-                value = Encoding.ASCII.GetString(bytes).TrimStart(new []{'\0'});
+                value = Encoding.ASCII.GetString(bytes).TrimStart('\0');
             }
             else
             {
                 var bytes = _tiffBody.GetBytes(entry.ValueOrOffset, entry.Count);
-                value = bytes.ToString(false).TrimEnd(new []{ '\0' });
+                value = bytes.ToString(false).TrimEnd('\0');
             }
 
             return value;
@@ -108,7 +108,7 @@ namespace GpsInfo
 
         private void ProcessGpsInfo(IEnumerable<DirectoryEntry> entries, byte[] bytes)
         {
-            var gps = new Gps();
+            var gps = new ExifInfo.Gps();
 
             foreach (var entry in entries)
             {
@@ -171,9 +171,9 @@ namespace GpsInfo
         private ImageFileHeader ParseHeader()
         {
             var headerBytes = _tiffBody.GetBytes(0, 8);
-            var header = new ImageFileHeader(headerBytes);
+            var header = new ImageFileHeader(headerBytes).Init();
 
-            return header;
+            return (ImageFileHeader)header;
         }
 
         public class Gps
@@ -189,7 +189,7 @@ namespace GpsInfo
             object Parse(byte[] bytes);
         }
 
-        public class RationalParser : IParser
+        public class RationalParser : ExifInfo.IParser
         {
             public object Parse(byte[] bytes)
             {

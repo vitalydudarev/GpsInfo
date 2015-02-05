@@ -48,6 +48,7 @@
     <Compile Include="GpsTags.cs" />
     <Compile Include="IFD.cs" />
     <Compile Include="ImageFileHeader.cs" />
+    <Compile Include="ITiffElement.cs" />
     <Compile Include="JpegImageInfo.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
