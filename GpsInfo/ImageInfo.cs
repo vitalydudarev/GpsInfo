@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
@@ -10,7 +11,8 @@ namespace GpsInfo
 
         private readonly byte[] _bytes;
         private readonly int _length;
-        
+        private readonly Dictionary<JpegMarkers, byte[]> _markers;
+
         #endregion
 
         #region Constants
@@ -28,6 +30,9 @@ namespace GpsInfo
         {
             _bytes = bytes;
             _length = _bytes.Length;
+            _markers = new Dictionary<JpegMarkers, byte[]>();
+
+            InitMarkers();
         }
 
         #endregion
@@ -50,11 +55,17 @@ namespace GpsInfo
         /// </summary>
         public bool HasExif()
         {
-            var bytes = _bytes.GetBytes(6, 4);
-            var isExifString = Encoding.UTF8.GetString(bytes).Equals(Exif);
-            var hasApp1Marker = HasApp1Marker();
+            byte[] bodyBytes;
 
-            return hasApp1Marker && isExifString;
+            if (_markers.TryGetValue(JpegMarkers.APP1, out bodyBytes))
+            {
+                var bytes = bodyBytes.GetBytes(2, 4);
+                var isExifString = Encoding.UTF8.GetString(bytes).Equals(Exif);
+
+                return isExifString;
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -62,26 +73,42 @@ namespace GpsInfo
         /// </summary>
         public byte[] GetExifData()
         {
-            var exifDataSize = GetExifSize();
-            var bytes = _bytes.GetBytes(4, exifDataSize);
-
-            return bytes;
+            return _markers[JpegMarkers.APP1];
         }
 
         #endregion
 
         #region Private Methods
 
-        private bool HasApp1Marker()
+        private void InitMarkers()
         {
-            var bytes = _bytes.GetBytes(2, 2);
+            int offset = 0;
 
-            return bytes.SequenceEqual(APP1);
+            for (int i = 0; i < 2; i++)
+            {
+                var marker = GetMarker(2 + offset);
+                var length = GetMarkerLength(4 + offset);
+                var bytes = _bytes.GetBytes(4 + offset, length);
+
+                offset += length + 2;
+
+                _markers.Add(marker, bytes);
+            }
         }
 
-        private int GetExifSize()
+        private JpegMarkers GetMarker(int offset)
         {
-            var bytes = _bytes.GetBytes(4, 2);
+            var bytes = _bytes.GetBytes(offset, 2);
+            Array.Reverse(bytes);
+            var value = BitConverter.ToUInt16(bytes, 0);
+
+            return (JpegMarkers) value;
+        }
+
+        private int GetMarkerLength(int offset)
+        {
+            var bytes = _bytes.GetBytes(offset, 2);
+            Array.Reverse(bytes);
 
             return BitConverter.ToUInt16(bytes, 0);
         }
