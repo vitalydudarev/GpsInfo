@@ -47,7 +47,7 @@
             Type = (ExifTypes)_bytes.GetBytes(2, 2).ToInt16(_isBigEndian);
             Count = _bytes.GetBytes(4, 4).ToInt32(_isBigEndian);
             ValueOrOffset = _bytes.GetBytes(8, 4).ToInt32(_isBigEndian);
-            TagName = ((TagsEnum.Tags)Tag).ToString();
+            TagName = ((ExifTags)Tag).ToString();
 
             return this;
         }

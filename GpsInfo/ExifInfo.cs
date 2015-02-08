@@ -23,15 +23,17 @@ namespace GpsInfo
         public void Parse()
         {
             var header = ParseTiffHeader();
-            ParseIfds(header);
+            var isBigEndian = header.ByteOrder == "MM";
+            var firstIfdOffset = header.FirstIfdOffset;
+
+            ParseIfds(isBigEndian, firstIfdOffset);
         }
 
-        private void ParseIfds(ImageFileHeader header)
+        private void ParseIfds(bool isBigEndian, int firstIfdOffset)
         {
-            bool isBigEndian = header.ByteOrder == "MM";
             var ifds = new List<IFD>();
             var allEntries = new List<DirectoryEntry>();
-            var tiff = _tiffData.GetBytes(header.FirstIfdOffset, (_length - (8 + header.FirstIfdOffset)));
+            var tiff = _tiffData.GetBytes(firstIfdOffset, (_length - (8 + firstIfdOffset)));
             var firstIfd = (IFD)new IFD(tiff, isBigEndian).Init();
             ifds.Add(firstIfd);
             var entries = firstIfd.Entries;
@@ -49,7 +51,7 @@ namespace GpsInfo
                 ifd = newIfd;
             }
 
-            var exifEntry = allEntries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)TagsEnum.Tags.ExifIfd);
+            var exifEntry = allEntries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)ExifTags.ExifIfd);
             if (exifEntry != null)
             {
                 var bytes = _tiffData.GetBytes(exifEntry.ValueOrOffset, (_length - (8 + exifEntry.ValueOrOffset)));
@@ -58,7 +60,7 @@ namespace GpsInfo
                 allEntries.AddRange(exifIfd.Entries);
             }
 
-            var gpsEntry = allEntries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)TagsEnum.Tags.GpsIfd);
+            var gpsEntry = allEntries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)ExifTags.GpsIfd);
             if (gpsEntry != null)
             {
                 var bytes = _tiffData.GetBytes(gpsEntry.ValueOrOffset, (_length - (8 + gpsEntry.ValueOrOffset)));
