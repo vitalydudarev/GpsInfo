@@ -37,25 +37,22 @@ namespace GpsInfo
             return BitConverter.ToUInt16(bytes, 0);
         }
 
-        private static void Test(byte[] bytes)
-        {
-            byte[] newArray = new byte[bytes.Length];
-            Array.Copy(bytes, newArray, bytes.Length);
-
-            Array.Reverse(newArray);
-
-            int res1 = BitConverter.ToInt32(bytes, 0);
-            int res2 = BitConverter.ToInt32(newArray, 0);
-        }
-
         public static int ToInt32(this byte[] bytes, bool bigEndian = true)
         {
-            Test(bytes);
-
             if (bigEndian)
                 Array.Reverse(bytes);
             
             return BitConverter.ToInt32(bytes, 0);
+        }
+
+        public static int ToUInt32(this byte[] bytes, bool bigEndian = true)
+        {
+            if (bigEndian)
+                Array.Reverse(bytes);
+
+            var value = BitConverter.ToUInt32(bytes, 0);;
+
+            return Convert.ToInt32(value);
         }
 
         public static string ToString(this byte[] bytes, bool bigEndian = true)
