@@ -1,38 +1,28 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace GpsInfo
 {
     public class ExifInfo
     {
-        #region Constants
-        private const int App1BodyOffset = 8;
-        private const int TiffBodyOffset = 8;
-        #endregion
-
         #region Private fields
-        private byte[] _byteArray;
-        private byte[] _app1Body;
-        private readonly byte[] _tiffBody;
+
+        private readonly byte[] _tiffData;
+        private readonly int _length;
+
         #endregion
 
-        /// <summary>
-        /// The constructor of ExifInfo class. Takes the body of JPEG image (byte array between SOI and EOI).
-        /// Takes byte array starting from 4th byte of an image (APP1 size).
-        /// </summary>
-        /// <param name="byteArray">Byte array.</param>
-        public ExifInfo(byte[] byteArray)
+        public ExifInfo(byte[] bytes)
         {
-            _byteArray = byteArray;
-            _tiffBody = _byteArray.GetBytes(TiffBodyOffset, _byteArray.Length - TiffBodyOffset);
+            _tiffData = bytes.GetBytes(8, bytes.Length - 8);
+            _length = _tiffData.Length;
         }
 
         public void Parse()
         {
-            var header = ParseHeader();
+            var header = ParseTiffHeader();
             ParseIfds(header);
         }
 
@@ -41,7 +31,7 @@ namespace GpsInfo
             bool isBigEndian = header.ByteOrder == "MM";
             var ifds = new List<IFD>();
             var allEntries = new List<DirectoryEntry>();
-            var tiff = _tiffBody.GetBytes(header.FirstIfdOffset, (_tiffBody.Length - (TiffBodyOffset + header.FirstIfdOffset)));
+            var tiff = _tiffData.GetBytes(header.FirstIfdOffset, (_length - (8 + header.FirstIfdOffset)));
             var firstIfd = (IFD)new IFD(tiff, isBigEndian).Init();
             ifds.Add(firstIfd);
             var entries = firstIfd.Entries;
@@ -51,7 +41,7 @@ namespace GpsInfo
 
             while (ifd.OffsetOfNextIfd != 0 && ifd.NumberOfDirectoryEntries > 0)
             {
-                var bytes = _tiffBody.GetBytes(ifd.OffsetOfNextIfd, (_tiffBody.Length - (TiffBodyOffset + ifd.OffsetOfNextIfd)));
+                var bytes = _tiffData.GetBytes(ifd.OffsetOfNextIfd, (_length - (8 + ifd.OffsetOfNextIfd)));
                 var newIfd = (IFD)new IFD(bytes, isBigEndian).Init();
                 ifds.Add(newIfd);
                 allEntries.AddRange(newIfd.Entries);
@@ -62,7 +52,7 @@ namespace GpsInfo
             var exifEntry = allEntries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)TagsEnum.Tags.ExifIfd);
             if (exifEntry != null)
             {
-                var bytes = _tiffBody.GetBytes(exifEntry.ValueOrOffset, (_tiffBody.Length - (TiffBodyOffset + exifEntry.ValueOrOffset)));
+                var bytes = _tiffData.GetBytes(exifEntry.ValueOrOffset, (_length - (8 + exifEntry.ValueOrOffset)));
                 var exifIfd = (IFD)new IFD(bytes, isBigEndian).Init();
                 ifds.Add(exifIfd);
                 allEntries.AddRange(exifIfd.Entries);
@@ -71,10 +61,10 @@ namespace GpsInfo
             var gpsEntry = allEntries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)TagsEnum.Tags.GpsIfd);
             if (gpsEntry != null)
             {
-                var bytes = _tiffBody.GetBytes(gpsEntry.ValueOrOffset, (_tiffBody.Length - (TiffBodyOffset + gpsEntry.ValueOrOffset)));
+                var bytes = _tiffData.GetBytes(gpsEntry.ValueOrOffset, (_length - (8 + gpsEntry.ValueOrOffset)));
                 var gpsIfd = (IFD)new IFD(bytes, isBigEndian).Init();
 
-                ProcessGpsInfo(gpsIfd.Entries, _tiffBody);
+                ProcessGpsInfo(gpsIfd.Entries, _tiffData);
             }
             
             foreach (var entry in allEntries)
@@ -99,7 +89,7 @@ namespace GpsInfo
             }
             else
             {
-                var bytes = _tiffBody.GetBytes(entry.ValueOrOffset, entry.Count);
+                var bytes = _tiffData.GetBytes(entry.ValueOrOffset, entry.Count);
                 value = bytes.ToString(false).TrimEnd('\0');
             }
 
@@ -168,12 +158,13 @@ namespace GpsInfo
             return degrees + minutes / 60 + seconds / 3600;
         }
 
-        private ImageFileHeader ParseHeader()
+        private ImageFileHeader ParseTiffHeader()
         {
-            var headerBytes = _tiffBody.GetBytes(0, 8);
-            var header = new ImageFileHeader(headerBytes).Init();
+            var headerBytes = _tiffData.GetBytes(0, 8);
+            var header = new ImageFileHeader(headerBytes);
+            header.Init();
 
-            return (ImageFileHeader)header;
+            return header;
         }
 
         public class Gps

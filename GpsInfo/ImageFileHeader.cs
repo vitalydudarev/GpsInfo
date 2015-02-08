@@ -18,6 +18,15 @@
 
         #endregion
 
+        #region Constants
+
+        /// <summary>
+        /// Motorola byte align.
+        /// </summary>
+        private const string MM = "MM";
+
+        #endregion
+
         #region Public Constructors
 
         public ImageFileHeader(byte[] bytes)
@@ -31,9 +40,10 @@
 
         public ITiffElement Init()
         {
-            ByteOrder = _bytes.GetBytes(0, sizeof(short)).ToString(true);
-            Number42 = _bytes.GetBytes(2, sizeof(short)).ToInt16(ByteOrder == "MM");
-            FirstIfdOffset = _bytes.GetBytes(4, sizeof(int)).ToInt32(ByteOrder == "MM");
+            ByteOrder = _bytes.GetBytes(0, 2).ToString(true);
+            var isBigEndian = ByteOrder == MM;
+            Number42 = _bytes.GetBytes(2, 2).ToInt16(isBigEndian);
+            FirstIfdOffset = _bytes.GetBytes(4, 4).ToUInt32(isBigEndian);
 
             return this;
         }
