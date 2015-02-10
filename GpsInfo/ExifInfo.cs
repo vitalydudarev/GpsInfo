@@ -33,7 +33,8 @@ namespace GpsInfo
         {
             var allEntries = new List<DirectoryEntry>();
             var tiff = _tiffData.GetBytes(firstIfdOffset, (_length - (8 + firstIfdOffset)));
-            var firstIfd = (IFD)new IFD(tiff, isBigEndian).Init();
+            var firstIfd = new IFD(tiff, isBigEndian);
+            firstIfd.Init();
             var entries = firstIfd.Entries;
             allEntries.AddRange(entries);
 
@@ -42,7 +43,8 @@ namespace GpsInfo
             while (ifd.OffsetOfNextIfd != 0 && ifd.NumberOfDirectoryEntries > 0)
             {
                 var bytes = _tiffData.GetBytes(ifd.OffsetOfNextIfd, (_length - (8 + ifd.OffsetOfNextIfd)));
-                var newIfd = (IFD)new IFD(bytes, isBigEndian).Init();
+                var newIfd = new IFD(bytes, isBigEndian);
+                newIfd.Init();
                 allEntries.AddRange(newIfd.Entries);
 
                 ifd = newIfd;
@@ -52,7 +54,8 @@ namespace GpsInfo
             if (exifEntry != null)
             {
                 var bytes = _tiffData.GetBytes(exifEntry.ValueOrOffset, (_length - (8 + exifEntry.ValueOrOffset)));
-                var exifIfd = (IFD)new IFD(bytes, isBigEndian).Init();
+                var exifIfd = new IFD(bytes, isBigEndian);
+                exifIfd.Init();
                 allEntries.AddRange(exifIfd.Entries);
             }
 
@@ -60,7 +63,8 @@ namespace GpsInfo
             if (gpsEntry != null)
             {
                 var bytes = _tiffData.GetBytes(gpsEntry.ValueOrOffset, (_length - (8 + gpsEntry.ValueOrOffset)));
-                var gpsIfd = (IFD)new IFD(bytes, isBigEndian).Init();
+                var gpsIfd = new IFD(bytes, isBigEndian);
+                gpsIfd.Init();
 
                 ProcessGpsInfo(gpsIfd.Entries, _tiffData);
             }

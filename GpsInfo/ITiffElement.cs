@@ -2,6 +2,6 @@
 {
     public interface ITiffElement
     {
-        ITiffElement Init();
+        void Init();
     }
 }

@@ -41,15 +41,13 @@
 
         #region Public Methods
 
-        public ITiffElement Init()
+        public void Init()
         {
             Tag = _bytes.GetBytes(0, 2).ToUInt16(_isBigEndian);
             Type = (ExifTypes)_bytes.GetBytes(2, 2).ToInt16(_isBigEndian);
             Count = _bytes.GetBytes(4, 4).ToInt32(_isBigEndian);
             ValueOrOffset = _bytes.GetBytes(8, 4).ToInt32(_isBigEndian);
             TagName = ((ExifTags)Tag).ToString();
-
-            return this;
         }
 
         #endregion

@@ -29,7 +29,7 @@
 
         #endregion
 
-        public ITiffElement Init()
+        public void Init()
         {
             NumberOfDirectoryEntries = _bytes.GetBytes(0, 2).ToInt16(_isBigEndian);
             var entriesBytes = _bytes.GetBytes(2, NumberOfDirectoryEntries * DirectoryEntry.Size);
@@ -40,12 +40,11 @@
 
             for (int i = 0; i < entriesBytes.Length; i = i + DirectoryEntry.Size)
             {
-                var entry = (DirectoryEntry)new DirectoryEntry(entriesBytes.GetBytes(i, DirectoryEntry.Size), _isBigEndian).Init();
+                var entry = new DirectoryEntry(entriesBytes.GetBytes(i, DirectoryEntry.Size), _isBigEndian);
+                entry.Init();
                 Entries[count] = entry;
                 count++;
             }
-
-            return this;
         }
     }
 }
