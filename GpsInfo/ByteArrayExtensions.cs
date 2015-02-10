@@ -1,15 +1,15 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 
 namespace GpsInfo
 {
     public static class ByteArrayExtensions
     {
+        #region Public Methods
+
         public static byte[] GetBytes(this byte[] bytes, int offset, int count)
         {
-            byte[] result = new byte[count];
+            var result = new byte[count];
             int j = 0;
 
             for (int i = offset; i < offset + count; i++)
@@ -62,5 +62,17 @@ namespace GpsInfo
 
             return Encoding.ASCII.GetString(bytes);
         }
+
+        #endregion
+
+        #region Private Methods
+
+        private static void PrepareBytes(byte[] bytes, bool isBigEndian)
+        {
+            if (isBigEndian)
+                Array.Reverse(bytes);
+        }
+
+        #endregion
     }
 }
