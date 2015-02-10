@@ -11,8 +11,17 @@ namespace GpsInfo
 
         private readonly byte[] _tiffData;
         private readonly int _length;
+        private bool _isBigEndian;
 
         #endregion
+
+        #region Constants
+
+        private const string MM = "MM";
+
+        #endregion
+
+        #region Public Constructors
 
         public ExifInfo(byte[] bytes)
         {
@@ -20,20 +29,23 @@ namespace GpsInfo
             _length = _tiffData.Length;
         }
 
+        #endregion
+
         public void Parse()
         {
             var header = ParseTiffHeader();
-            var isBigEndian = header.ByteOrder == "MM";
             var firstIfdOffset = header.FirstIfdOffset;
 
-            ParseIfds(isBigEndian, firstIfdOffset);
+            _isBigEndian = IsBigEndian(header.ByteOrder);
+
+            ParseIfds(firstIfdOffset);
         }
 
-        private void ParseIfds(bool isBigEndian, int firstIfdOffset)
+        private void ParseIfds(int firstIfdOffset)
         {
             var allEntries = new List<DirectoryEntry>();
             var tiff = _tiffData.GetBytes(firstIfdOffset, (_length - (8 + firstIfdOffset)));
-            var firstIfd = new IFD(tiff, isBigEndian);
+            var firstIfd = new IFD(tiff, _isBigEndian);
             firstIfd.Init();
             var entries = firstIfd.Entries;
             allEntries.AddRange(entries);
@@ -43,7 +55,7 @@ namespace GpsInfo
             while (ifd.OffsetOfNextIfd != 0 && ifd.NumberOfDirectoryEntries > 0)
             {
                 var bytes = _tiffData.GetBytes(ifd.OffsetOfNextIfd, (_length - (8 + ifd.OffsetOfNextIfd)));
-                var newIfd = new IFD(bytes, isBigEndian);
+                var newIfd = new IFD(bytes, _isBigEndian);
                 newIfd.Init();
                 allEntries.AddRange(newIfd.Entries);
 
@@ -54,7 +66,7 @@ namespace GpsInfo
             if (exifEntry != null)
             {
                 var bytes = _tiffData.GetBytes(exifEntry.ValueOrOffset, (_length - (8 + exifEntry.ValueOrOffset)));
-                var exifIfd = new IFD(bytes, isBigEndian);
+                var exifIfd = new IFD(bytes, _isBigEndian);
                 exifIfd.Init();
                 allEntries.AddRange(exifIfd.Entries);
             }
@@ -63,7 +75,7 @@ namespace GpsInfo
             if (gpsEntry != null)
             {
                 var bytes = _tiffData.GetBytes(gpsEntry.ValueOrOffset, (_length - (8 + gpsEntry.ValueOrOffset)));
-                var gpsIfd = new IFD(bytes, isBigEndian);
+                var gpsIfd = new IFD(bytes, _isBigEndian);
                 gpsIfd.Init();
 
                 ProcessGpsInfo(gpsIfd.Entries, _tiffData);
@@ -163,10 +175,15 @@ namespace GpsInfo
         private ImageFileHeader ParseTiffHeader()
         {
             var headerBytes = _tiffData.GetBytes(0, 8);
-            var header = new ImageFileHeader(headerBytes);
+            var header = new ImageFileHeader(headerBytes, IsBigEndian);
             header.Init();
 
             return header;
+        }
+
+        private static bool IsBigEndian(string str)
+        {
+            return str == MM;
         }
 
         public class Gps

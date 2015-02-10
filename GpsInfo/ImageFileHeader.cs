@@ -1,4 +1,6 @@
-﻿namespace GpsInfo
+﻿using System;
+
+namespace GpsInfo
 {
     public class ImageFileHeader : ITiffElement
     {
@@ -15,23 +17,16 @@
         #region Private Fields
 
         private readonly byte[] _bytes;
+        private readonly Func<string, bool> _isBigEndianFunc; 
 
         #endregion
-
-        #region Constants
-
-        /// <summary>
-        /// Motorola byte align.
-        /// </summary>
-        private const string MM = "MM";
-
-        #endregion
-
+        
         #region Public Constructors
 
-        public ImageFileHeader(byte[] bytes)
+        public ImageFileHeader(byte[] bytes, Func<string, bool> isBigEndianFunc)
         {
             _bytes = bytes;
+            _isBigEndianFunc = isBigEndianFunc;
         }
 
         #endregion
@@ -41,7 +36,7 @@
         public void Init()
         {
             ByteOrder = _bytes.GetBytes(0, 2).ToString(true);
-            var isBigEndian = ByteOrder == MM;
+            var isBigEndian = _isBigEndianFunc(ByteOrder);
             Number42 = _bytes.GetBytes(2, 2).ToInt16(isBigEndian);
             FirstIfdOffset = _bytes.GetBytes(4, 4).ToUInt32(isBigEndian);
         }
