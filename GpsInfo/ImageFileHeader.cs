@@ -2,7 +2,7 @@
 
 namespace GpsInfo
 {
-    public class ImageFileHeader : ITiffElement
+    public class ImageFileHeader : TiffElement
     {
         #region Public Properties
 
@@ -16,16 +16,14 @@ namespace GpsInfo
 
         #region Private Fields
 
-        private readonly byte[] _bytes;
         private readonly Func<string, bool> _isBigEndianFunc; 
 
         #endregion
         
         #region Public Constructors
 
-        public ImageFileHeader(byte[] bytes, Func<string, bool> isBigEndianFunc)
+        public ImageFileHeader(byte[] bytes, Func<string, bool> isBigEndianFunc) : base(bytes, false)
         {
-            _bytes = bytes;
             _isBigEndianFunc = isBigEndianFunc;
         }
 
@@ -33,12 +31,12 @@ namespace GpsInfo
 
         #region Public Methods
 
-        public void Init()
+        public override void Init()
         {
             ByteOrder = _bytes.GetBytes(0, 2).ToString(false);
-            var isBigEndian = _isBigEndianFunc(ByteOrder);
-            Number42 = _bytes.GetBytes(2, 2).ToInt16(isBigEndian);
-            FirstIfdOffset = _bytes.GetBytes(4, 4).ToUInt32(isBigEndian);
+            _isBigEndian = _isBigEndianFunc(ByteOrder);
+            Number42 = _bytes.GetBytes(2, 2).ToInt16(_isBigEndian);
+            FirstIfdOffset = _bytes.GetBytes(4, 4).ToUInt32(_isBigEndian);
         }
 
         #endregion

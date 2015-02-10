@@ -1,6 +1,6 @@
 ﻿namespace GpsInfo
 {
-    public class IFD : ITiffElement
+    public class IFD : TiffElement
     {
         #region Public Properties
 
@@ -11,25 +11,16 @@
         public DirectoryEntry[] Entries { get; private set; }
 
         #endregion
-
-        #region Private Fields
-
-        private readonly byte[] _bytes;
-        private readonly bool _isBigEndian;
-
-        #endregion
-
+        
         #region Public Constructors
 
-        public IFD(byte[] bytes, bool isBigEndian)
+        public IFD(byte[] bytes, bool isBigEndian) : base(bytes, isBigEndian)
         {
-            _bytes = bytes;
-            _isBigEndian = isBigEndian;
         }
 
         #endregion
 
-        public void Init()
+        public override void Init()
         {
             NumberOfDirectoryEntries = _bytes.GetBytes(0, 2).ToInt16(_isBigEndian);
             var entriesBytes = _bytes.GetBytes(2, NumberOfDirectoryEntries * DirectoryEntry.Size);

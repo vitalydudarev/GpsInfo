@@ -1,6 +1,6 @@
 ﻿namespace GpsInfo
 {
-    public class DirectoryEntry : ITiffElement
+    public class DirectoryEntry : TiffElement
     {
         #region Public Properties
 
@@ -15,14 +15,7 @@
         public string TagName { get; private set; }
 
         #endregion
-
-        #region Private Fields
-
-        private readonly byte[] _bytes;
-        private readonly bool _isBigEndian;
-
-        #endregion
-
+        
         #region Public Constants
 
         public const int Size = 12;
@@ -31,17 +24,15 @@
 
         #region Public Constructors
 
-        public DirectoryEntry(byte[] bytes, bool isBigEndian)
+        public DirectoryEntry(byte[] bytes, bool isBigEndian) : base(bytes, isBigEndian)
         {
-            _bytes = bytes;
-            _isBigEndian = isBigEndian;
         }
 
         #endregion
 
         #region Public Methods
 
-        public void Init()
+        public override void Init()
         {
             Tag = _bytes.GetBytes(0, 2).ToUInt16(_isBigEndian);
             Type = (ExifTypes)_bytes.GetBytes(2, 2).ToInt16(_isBigEndian);
