@@ -35,7 +35,7 @@ namespace GpsInfo
 
         public void Init()
         {
-            ByteOrder = _bytes.GetBytes(0, 2).ToString(true);
+            ByteOrder = _bytes.GetBytes(0, 2).ToString(false);
             var isBigEndian = _isBigEndianFunc(ByteOrder);
             Number42 = _bytes.GetBytes(2, 2).ToInt16(isBigEndian);
             FirstIfdOffset = _bytes.GetBytes(4, 4).ToUInt32(isBigEndian);
