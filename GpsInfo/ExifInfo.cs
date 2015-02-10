@@ -31,11 +31,9 @@ namespace GpsInfo
 
         private void ParseIfds(bool isBigEndian, int firstIfdOffset)
         {
-            var ifds = new List<IFD>();
             var allEntries = new List<DirectoryEntry>();
             var tiff = _tiffData.GetBytes(firstIfdOffset, (_length - (8 + firstIfdOffset)));
             var firstIfd = (IFD)new IFD(tiff, isBigEndian).Init();
-            ifds.Add(firstIfd);
             var entries = firstIfd.Entries;
             allEntries.AddRange(entries);
 
@@ -45,7 +43,6 @@ namespace GpsInfo
             {
                 var bytes = _tiffData.GetBytes(ifd.OffsetOfNextIfd, (_length - (8 + ifd.OffsetOfNextIfd)));
                 var newIfd = (IFD)new IFD(bytes, isBigEndian).Init();
-                ifds.Add(newIfd);
                 allEntries.AddRange(newIfd.Entries);
 
                 ifd = newIfd;
@@ -56,7 +53,6 @@ namespace GpsInfo
             {
                 var bytes = _tiffData.GetBytes(exifEntry.ValueOrOffset, (_length - (8 + exifEntry.ValueOrOffset)));
                 var exifIfd = (IFD)new IFD(bytes, isBigEndian).Init();
-                ifds.Add(exifIfd);
                 allEntries.AddRange(exifIfd.Entries);
             }
 
@@ -100,7 +96,7 @@ namespace GpsInfo
 
         private void ProcessGpsInfo(IEnumerable<DirectoryEntry> entries, byte[] bytes)
         {
-            var gps = new ExifInfo.Gps();
+            var gps = new Gps();
 
             foreach (var entry in entries)
             {
@@ -182,7 +178,7 @@ namespace GpsInfo
             object Parse(byte[] bytes);
         }
 
-        public class RationalParser : ExifInfo.IParser
+        public class RationalParser : IParser
         {
             public object Parse(byte[] bytes)
             {
