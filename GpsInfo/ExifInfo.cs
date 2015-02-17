@@ -12,6 +12,7 @@ namespace GpsInfo
         private readonly byte[] _tiffData;
         private readonly int _length;
         private bool _isBigEndian;
+        private readonly Dictionary<ushort, IFD> _ifds; 
 
         #endregion
 
@@ -27,9 +28,15 @@ namespace GpsInfo
         {
             _tiffData = bytes.GetBytes(8, bytes.Length - 8);
             _length = _tiffData.Length;
+            _ifds = new Dictionary<ushort, IFD>();
         }
 
         #endregion
+
+        public bool HasGps
+        {
+            get { return _ifds.ContainsKey((ushort)ExifTags.GpsIfd); }
+        }
 
         public void Parse()
         {
@@ -43,51 +50,43 @@ namespace GpsInfo
 
         private void ParseIfds(int firstIfdOffset)
         {
-            var allEntries = new List<DirectoryEntry>();
+            var entries = new List<DirectoryEntry>();
             var tiff = _tiffData.GetBytes(firstIfdOffset, (_length - (8 + firstIfdOffset)));
-            var firstIfd = new IFD(tiff, _isBigEndian);
-            firstIfd.Init();
-            var entries = firstIfd.Entries;
-            allEntries.AddRange(entries);
+            var ifd = new IFD(tiff, _isBigEndian);
+            ifd.Init();
 
-            var ifd = firstIfd;
-
+            _ifds.Add(0, ifd);
+            entries.AddRange(ifd.Entries);
+            
             while (ifd.OffsetOfNextIfd != 0 && ifd.NumberOfDirectoryEntries > 0)
             {
                 var bytes = _tiffData.GetBytes(ifd.OffsetOfNextIfd, (_length - (8 + ifd.OffsetOfNextIfd)));
-                var newIfd = new IFD(bytes, _isBigEndian);
-                newIfd.Init();
-                allEntries.AddRange(newIfd.Entries);
-
-                ifd = newIfd;
+                ifd = new IFD(bytes, _isBigEndian);
+                ifd.Init();
+                
+                _ifds.Add(1, ifd);
+                entries.AddRange(ifd.Entries);
             }
 
-            var exifEntry = allEntries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)ExifTags.ExifIfd);
+            var exifEntry = entries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)ExifTags.ExifIfd);
             if (exifEntry != null)
             {
                 var bytes = _tiffData.GetBytes(exifEntry.ValueOrOffset, (_length - (8 + exifEntry.ValueOrOffset)));
                 var exifIfd = new IFD(bytes, _isBigEndian);
                 exifIfd.Init();
-                allEntries.AddRange(exifIfd.Entries);
+
+                _ifds.Add(exifEntry.Tag, exifIfd);
+                entries.AddRange(exifIfd.Entries);
             }
 
-            var gpsEntry = allEntries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)ExifTags.GpsIfd);
+            var gpsEntry = entries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)ExifTags.GpsIfd);
             if (gpsEntry != null)
             {
                 var bytes = _tiffData.GetBytes(gpsEntry.ValueOrOffset, (_length - (8 + gpsEntry.ValueOrOffset)));
                 var gpsIfd = new IFD(bytes, _isBigEndian);
                 gpsIfd.Init();
 
-                ProcessGpsInfo(gpsIfd.Entries, _tiffData);
-            }
-            
-            foreach (var entry in allEntries)
-            {
-                if (entry.Type != ExifTypes.ASCII)
-                    continue;
-
-                string value = GetStringValue(entry);
-                Console.WriteLine(entry.Tag + " " + value);
+                _ifds.Add(gpsEntry.Tag, gpsIfd);
             }
         }
 
