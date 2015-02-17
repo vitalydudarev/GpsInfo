@@ -58,6 +58,18 @@ namespace GpsInfo
             return Encoding.ASCII.GetString(bytes);
         }
 
+        public static byte[] TrimZeros(this byte[] bytes)
+        {
+            var startIndex = Array.FindIndex(bytes, a => a != 0);
+            var endIndex = Array.FindLastIndex(bytes, a => a != 0);
+            var length = endIndex - startIndex + 1;
+
+            var newArray = new byte[length];
+            Array.Copy(bytes, startIndex, newArray, 0, length);
+
+            return newArray;
+        }
+
         #endregion
 
         #region Private Methods

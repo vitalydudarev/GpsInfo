@@ -28,7 +28,7 @@ namespace GpsInfo
 
         public ImageInfo(byte[] bytes)
         {
-            _bytes = bytes;
+            _bytes = bytes.TrimZeros();
             _length = _bytes.Length;
             _markers = new Dictionary<JpegMarkers, byte[]>();
 
