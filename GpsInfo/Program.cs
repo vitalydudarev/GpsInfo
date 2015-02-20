@@ -10,13 +10,13 @@ namespace GpsInfo
         {
             var bytes = ReadFile(FileName);
 
-            var jii = new ImageInfo(bytes);
-            var isJpeg = jii.IsJpeg();
-            var hasExif = jii.HasExif();
+            var imageInfo = new ImageInfo(bytes);
+            var isJpeg = imageInfo.IsJpeg();
+            var hasExif = imageInfo.HasExif;
 
             if (isJpeg && hasExif)
             {
-                var exifData = jii.GetExifData();
+                var exifData = imageInfo.GetExifData();
                 var exifInfo = new ExifInfo(exifData);
                 exifInfo.Parse();
             }

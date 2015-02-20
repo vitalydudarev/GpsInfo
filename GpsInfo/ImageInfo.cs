@@ -19,8 +19,6 @@ namespace GpsInfo
         
         private readonly byte[] SOI = { 0xFF, 0xD8 };   // start of image
         private readonly byte[] EOI = { 0xFF, 0xD9 };   // end of image
-        private readonly byte[] APP1 = { 0xFF, 0xE1 };	// EXIF marker
-        private const string Exif = "Exif";
         
         #endregion
 
@@ -37,6 +35,18 @@ namespace GpsInfo
 
         #endregion
 
+        #region Public Properties
+
+        /// <summary>
+        /// Gets the value that indicates whether the image contains EXIF data.
+        /// </summary>
+        public bool HasExif
+        {
+            get { return _markers.ContainsKey(JpegMarkers.APP1); }
+        }
+
+        #endregion
+
         #region Public Methods
 
         /// <summary>
@@ -48,24 +58,6 @@ namespace GpsInfo
             var lastBytes = _bytes.GetBytes(_length - 2, 2);
 
             return firstBytes.SequenceEqual(SOI) && lastBytes.SequenceEqual(EOI);
-        }
-        
-        /// <summary>
-        /// Returns the value that indicates whether the image contains EXIF data.
-        /// </summary>
-        public bool HasExif()
-        {
-            byte[] bodyBytes;
-
-            if (_markers.TryGetValue(JpegMarkers.APP1, out bodyBytes))
-            {
-                var bytes = bodyBytes.GetBytes(2, 4);
-                var isExifString = Encoding.UTF8.GetString(bytes).Equals(Exif);
-
-                return isExifString;
-            }
-
-            return false;
         }
 
         /// <summary>
@@ -80,6 +72,9 @@ namespace GpsInfo
 
         #region Private Methods
 
+        /// <summary>
+        /// Initializes application markers.
+        /// </summary>
         private void InitMarkers()
         {
             int offset = 0;
@@ -88,7 +83,7 @@ namespace GpsInfo
             {
                 var marker = GetMarker(2 + offset);
                 var length = GetMarkerLength(4 + offset);
-                var bytes = _bytes.GetBytes(4 + offset, length);
+                var bytes = _bytes.GetBytes(2 + offset, length);
 
                 offset += length + 2;
 
