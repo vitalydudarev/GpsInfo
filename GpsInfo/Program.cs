@@ -19,6 +19,12 @@ namespace GpsInfo
                 var exifData = imageInfo.GetExifData();
                 var exifInfo = new ExifInfo(exifData);
                 exifInfo.Parse();
+
+                if (exifInfo.HasGps)
+                {
+                    var gpsInfo = new GpsInfo(exifInfo.GetGpsData(), exifInfo.TiffData);
+                    var gpsData = gpsInfo.Gps;
+                }
             }
         }
 

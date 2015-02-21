@@ -87,7 +87,8 @@ namespace GpsInfo
 
                 offset += length + 2;
 
-                _markers.Add(marker, bytes);
+                if (!_markers.ContainsKey(marker))
+                    _markers.Add(marker, bytes);
             }
         }
 

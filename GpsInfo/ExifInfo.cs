@@ -26,17 +26,31 @@ namespace GpsInfo
 
         public ExifInfo(byte[] bytes)
         {
-            _tiffData = bytes.GetBytes(8, bytes.Length - 8);
+            _tiffData = bytes.GetBytes(10, bytes.Length - 10);
             _length = _tiffData.Length;
             _ifds = new Dictionary<ushort, IFD>();
         }
 
         #endregion
 
+        #region Public Properties
+
+        /// <summary>
+        /// Gets the value that indicates whether the image contains GPS data.
+        /// </summary>
         public bool HasGps
         {
             get { return _ifds.ContainsKey((ushort)ExifTags.GpsIfd); }
         }
+
+        public byte[] TiffData
+        {
+            get { return _tiffData; }
+        }
+
+        #endregion
+
+        #region Public Methods
 
         public void Parse()
         {
@@ -48,129 +62,56 @@ namespace GpsInfo
             ParseIfds(firstIfdOffset);
         }
 
-        private void ParseIfds(int firstIfdOffset)
+        public IList<DirectoryEntry> GetGpsData()
         {
-            var entries = new List<DirectoryEntry>();
-            var tiff = _tiffData.GetBytes(firstIfdOffset, (_length - (8 + firstIfdOffset)));
-            var ifd = new IFD(tiff, _isBigEndian);
+            return _ifds[(ushort)ExifTags.GpsIfd].Entries;
+        }
+
+        #endregion
+
+        private IFD GetIfd(int offset)
+        {
+            var bytes = _tiffData.GetBytes(offset, (_length - (8 + offset)));
+            var ifd = new IFD(bytes, _isBigEndian);
             ifd.Init();
 
+            return ifd;
+        }
+
+        private void ParseIfds(int firstIfdOffset)
+        {
+            var ifd = GetIfd(firstIfdOffset);
+            var entries = ifd.Entries;
+
             _ifds.Add(0, ifd);
-            entries.AddRange(ifd.Entries);
-            
+
+            int i = 1;
+
             while (ifd.OffsetOfNextIfd != 0 && ifd.NumberOfDirectoryEntries > 0)
             {
-                var bytes = _tiffData.GetBytes(ifd.OffsetOfNextIfd, (_length - (8 + ifd.OffsetOfNextIfd)));
-                ifd = new IFD(bytes, _isBigEndian);
-                ifd.Init();
-                
-                _ifds.Add(1, ifd);
-                entries.AddRange(ifd.Entries);
+                ifd = GetIfd(ifd.OffsetOfNextIfd);
+                _ifds.Add((ushort)i, ifd);
+
+                i++;
             }
 
-            var exifEntry = entries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)ExifTags.ExifIfd);
-            if (exifEntry != null)
+            var additionalIfds = new [] { ExifTags.ExifIfd, ExifTags.GpsIfd };
+
+            foreach (var additionalIfd in additionalIfds)
             {
-                var bytes = _tiffData.GetBytes(exifEntry.ValueOrOffset, (_length - (8 + exifEntry.ValueOrOffset)));
-                var exifIfd = new IFD(bytes, _isBigEndian);
-                exifIfd.Init();
-
-                _ifds.Add(exifEntry.Tag, exifIfd);
-                entries.AddRange(exifIfd.Entries);
-            }
-
-            var gpsEntry = entries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)ExifTags.GpsIfd);
-            if (gpsEntry != null)
-            {
-                var bytes = _tiffData.GetBytes(gpsEntry.ValueOrOffset, (_length - (8 + gpsEntry.ValueOrOffset)));
-                var gpsIfd = new IFD(bytes, _isBigEndian);
-                gpsIfd.Init();
-
-                _ifds.Add(gpsEntry.Tag, gpsIfd);
-            }
-        }
-
-        private string GetStringValue(DirectoryEntry entry)
-        {
-            string value;
-
-            // if Count is less or equals to 4, the value is stored in ValueOrOffset field of Directory Entry
-            if (entry.Count <= 4)
-            {
-                var bytes = BitConverter.GetBytes(entry.ValueOrOffset);
-                value = Encoding.ASCII.GetString(bytes).TrimStart('\0');
-            }
-            else
-            {
-                var bytes = _tiffData.GetBytes(entry.ValueOrOffset, entry.Count);
-                value = bytes.ToString(false).TrimEnd('\0');
-            }
-
-            return value;
-        }
-
-        private void ProcessGpsInfo(IEnumerable<DirectoryEntry> entries, byte[] bytes)
-        {
-            var gps = new Gps();
-
-            foreach (var entry in entries)
-            {
-                if (entry.Type == ExifTypes.ASCII)
+                var entry = entries.Select(a => a).FirstOrDefault(a => a.Tag == (ushort)additionalIfd);
+                if (entry != null)
                 {
-                    switch (entry.Tag)
-                    {
-                        case (int)GpsTags.LatitudeRef:
-                        case (int)GpsTags.LongitudeRef:
-                        case (int)GpsTags.ImgDirectionRef:
-                        {
-                            string value = GetStringValue(entry);
-                        }
-                            break;
-                    }
-                }
-
-                if (entry.Type == ExifTypes.RATIONAL)
-                {
-                    const int rationalSize = 8;
-                    byte[] readBytes = bytes.GetBytes(entry.ValueOrOffset, entry.Count * rationalSize);
-
-                    switch (entry.Tag)
-                    {
-                        case (int)GpsTags.Latitude:
-                            gps.Latitude = ParseRational(readBytes);
-                            break;
-                        case (int)GpsTags.Longitude:
-                            gps.Longitude = ParseRational(readBytes);
-                            break;
-                        case (int)GpsTags.Altitude:
-                            gps.Altitude = ParseSimpleRational(readBytes);
-                            break;
-                        case (int)GpsTags.ImgDirection:
-                            gps.ImageDirection = ParseSimpleRational(readBytes);
-                            break;
-                    }
+                    ifd = GetIfd(entry.ValueOrOffset);
+                    _ifds.Add(entry.Tag, ifd);
                 }
             }
         }
 
-        private static double ParseSimpleRational(byte[] bytes)
-        {
-            return bytes.GetBytes(0, 4).ToInt32() / bytes.GetBytes(4, 4).ToInt32();
-        }
-
-        private static double ParseRational(byte[] bytes)
-        {
-            byte[] degreesBytes = bytes.GetBytes(0, 8);
-            byte[] minutesBytes = bytes.GetBytes(8, 8);
-            byte[] secondsBytes = bytes.GetBytes(16, 8);
-
-            double degrees = ParseSimpleRational(degreesBytes);
-            double minutes = ParseSimpleRational(minutesBytes);
-            double seconds = ParseSimpleRational(secondsBytes);
-
-            return degrees + minutes / 60 + seconds / 3600;
-        }
-
+        // TIFF header: 
+        // Byte Order (2 bytes)
+        // '42' (2 bytes)
+        // Offset of IFD (4 bytes)
         private ImageFileHeader ParseTiffHeader()
         {
             var headerBytes = _tiffData.GetBytes(0, 8);
@@ -183,14 +124,6 @@ namespace GpsInfo
         private static bool IsBigEndian(string str)
         {
             return str == MM;
-        }
-
-        public class Gps
-        {
-            public double Latitude;
-            public double Longitude;
-            public double Altitude;
-            public double ImageDirection;
         }
 
         public interface IParser
